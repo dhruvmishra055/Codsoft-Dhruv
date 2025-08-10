@@ -1,91 +1,96 @@
+import tkinter as tk
+from tkinter import messagebox, simpledialog, ttk
+
 contacts = {}
 
+# Add Contact
 def add_contact():
-    name = input("Enter full name: ").strip().title()
+    name = simpledialog.askstring("Add Contact", "Full Name:").strip().title()
+    if not name:
+        return
     if name in contacts:
-        print(f"Contact for '{name}' already exists.")
+        messagebox.showinfo("Duplicate", f"Contact for '{name}' already exists.")
         return
-    phone = input("Phone number: ").strip()
-    email = input("Email address: ").strip()
-    address = input("Home address: ").strip()
-    contacts[name] = {
-        'phone': phone,
-        'email': email,
-        'address': address
-    }
-    print(f"Contact for '{name}' added successfully.")
+    phone = simpledialog.askstring("Add Contact", "Phone Number:").strip()
+    email = simpledialog.askstring("Add Contact", "Email Address:").strip()
+    address = simpledialog.askstring("Add Contact", "Home Address:").strip()
+    contacts[name] = {'phone': phone, 'email': email, 'address': address}
+    refresh_contacts()
+    messagebox.showinfo("Success", f"Contact for '{name}' added successfully.")
 
-def view_contacts():
-    if not contacts:
-        print("\nYour contact list is empty.")
-        return
-    print("\nAll Saved Contacts:")
+# View Contacts in List
+def refresh_contacts():
+    contact_list.delete(*contact_list.get_children())
     for name, details in contacts.items():
-        print(f"- {name}: {details['phone']}")
+        contact_list.insert("", "end", values=(name, details['phone'], details['email'], details['address']))
 
+# Search Contact
 def search_contact():
-    name = input("Enter the name to search for: ").strip().title()
-    contact = contacts.get(name)
-    if contact:
-        print(f"\n Contact Details for {name}:")
-        for field, value in contact.items():
-            print(f"{field.capitalize()}: {value}")
+    name = simpledialog.askstring("Search Contact", "Enter Name:").strip().title()
+    if not name:
+        return
+    if name in contacts:
+        details = contacts[name]
+        messagebox.showinfo("Contact Found", f"Name: {name}\nPhone: {details['phone']}\nEmail: {details['email']}\nAddress: {details['address']}")
     else:
-        print(" No contact found with that name.")
+        messagebox.showinfo("Not Found", "No contact found with that name.")
 
+# Update Contact
 def update_contact():
-    name = input("Enter the name of the contact to update: ").strip().title()
+    name = simpledialog.askstring("Update Contact", "Enter Name:").strip().title()
     if name in contacts:
-        print("Press Enter without typing to keep the current value.")
-        phone = input(f"New phone (current: {contacts[name]['phone']}): ") or contacts[name]['phone']
-        email = input(f"New email (current: {contacts[name]['email']}): ") or contacts[name]['email']
-        address = input(f"New address (current: {contacts[name]['address']}): ") or contacts[name]['address']
-        contacts[name] = {
-            'phone': phone,
-            'email': email,
-            'address': address
-        }
-        print(f"Contact for '{name}' updated.")
+        current = contacts[name]
+        phone = simpledialog.askstring("Update Contact", f"New phone (current: {current['phone']}):") or current['phone']
+        email = simpledialog.askstring("Update Contact", f"New email (current: {current['email']}):") or current['email']
+        address = simpledialog.askstring("Update Contact", f"New address (current: {current['address']}):") or current['address']
+        contacts[name] = {'phone': phone, 'email': email, 'address': address}
+        refresh_contacts()
+        messagebox.showinfo("Updated", f"Contact for '{name}' updated successfully.")
     else:
-        print("That contact does not exist.")
+        messagebox.showinfo("Not Found", "That contact does not exist.")
 
+# Delete Contact
 def delete_contact():
-    name = input("Enter the name of the contact to delete: ").strip().title()
+    name = simpledialog.askstring("Delete Contact", "Enter Name:").strip().title()
     if name in contacts:
-        confirm = input(f"Are you sure you want to delete '{name}'? (y/n): ").lower()
-        if confirm == 'y':
+        confirm = messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete '{name}'?")
+        if confirm:
             del contacts[name]
-            print(f"🗑️ Contact for '{name}' deleted.")
-        else:
-            print("Deletion canceled.")
+            refresh_contacts()
+            messagebox.showinfo("Deleted", f"Contact for '{name}' deleted.")
     else:
-        print("Contact not found.")
+        messagebox.showinfo("Not Found", "Contact not found.")
 
-def main_menu():
-    while True:
-        print("\n====== Contact Book Menu ======")
-        print("1. Add Contact")
-        print("2. View All Contacts")
-        print("3. Search Contact")
-        print("4. Update Contact")
-        print("5. Delete Contact")
-        print("6. Exit")
-        choice = input("What would you like to do? (1-6): ")
+# GUI Setup
+root = tk.Tk()
+root.title("Premium Contact Book")
+root.geometry("700x400")
+root.configure(bg="#f9f9f9")
 
-        if choice == '1':
-            add_contact()
-        elif choice == '2':
-            view_contacts()
-        elif choice == '3':
-            search_contact()
-        elif choice == '4':
-            update_contact()
-        elif choice == '5':
-            delete_contact()
-        elif choice == '6':
-            print(" Exiting Contact Book. See you next time!")
-            break
-        else:
-            print(" Please choose a valid option (1-6).")
+style = ttk.Style()
+style.configure("Treeview", font=("Segoe UI", 11), rowheight=28)
+style.configure("Treeview.Heading", font=("Segoe UI", 12, "bold"))
 
-main_menu()
+# Contact Table
+columns = ("Name", "Phone", "Email", "Address")
+contact_list = ttk.Treeview(root, columns=columns, show="headings")
+for col in columns:
+    contact_list.heading(col, text=col)
+    contact_list.column(col, width=150, anchor="center")
+contact_list.pack(pady=20, fill="both", expand=True)
+
+# Buttons Frame
+btn_frame = tk.Frame(root, bg="#f9f9f9")
+btn_frame.pack(pady=10)
+
+buttons = [
+    ("Add Contact", add_contact),
+    ("Search Contact", search_contact),
+    ("Update Contact", update_contact),
+    ("Delete Contact", delete_contact)
+]
+
+for text, cmd in buttons:
+    tk.Button(btn_frame, text=text, command=cmd, font=("Segoe UI", 11), bg="#1f4e79", fg="white", relief="flat", padx=10, pady=5).pack(side="left", padx=8)
+
+root.mainloop()
